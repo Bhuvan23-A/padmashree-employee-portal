@@ -18,7 +18,7 @@ function DataEntry() {
   const submitEntry = async () => {
     try {
       await axios.post(
-        "http://localhost:5000/api/entries/create",
+        "https://padmashree-backend.onrender.com/api/entries/create",
         {
           employee_id: user.id,
           ...form,

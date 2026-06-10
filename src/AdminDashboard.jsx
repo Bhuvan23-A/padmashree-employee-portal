@@ -27,7 +27,7 @@ function AdminDashboard() {
   const createEmployee = async () => {
     try {
       await axios.post(
-        "http://localhost:5000/api/employees/create",
+        "https://padmashree-backend.onrender.com/api/admin/stats",
         {
           name,
           email,
