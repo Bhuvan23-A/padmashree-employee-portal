@@ -15,7 +15,7 @@ function AdminDashboard() {
   const fetchStats = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/admin/stats"
+        "https://padmashree-backend.onrender.com/api/admin/stats"
       );
 
       setEmployees(res.data);
@@ -27,7 +27,7 @@ function AdminDashboard() {
   const createEmployee = async () => {
     try {
       await axios.post(
-        "https://padmashree-backend.onrender.com/api/admin/stats",
+        "https://padmashree-backend.onrender.com/api/employees/create",
         {
           name,
           email,
@@ -44,7 +44,12 @@ function AdminDashboard() {
       fetchStats();
     } catch (err) {
       console.error(err);
-      alert("Failed To Create Employee");
+
+      if (err.response?.data?.message) {
+        alert(err.response.data.message);
+      } else {
+        alert("Failed To Create Employee");
+      }
     }
   };
 
@@ -54,8 +59,7 @@ function AdminDashboard() {
   };
 
   const totalEntries = employees.reduce(
-    (sum, emp) =>
-      sum + Number(emp.total_entries),
+    (sum, emp) => sum + Number(emp.total_entries),
     0
   );
 
@@ -88,7 +92,7 @@ function AdminDashboard() {
 
       <div className="max-w-6xl mx-auto mt-10">
 
-        {/* Add Employee */}
+        {/* Add Employee Card */}
         <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
 
           <h2 className="text-2xl font-bold mb-5">
