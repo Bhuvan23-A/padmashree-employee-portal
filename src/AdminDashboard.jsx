@@ -8,6 +8,12 @@ function AdminDashboard() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [projectName, setProjectName] =
+    useState("");
+
+  const [csvFile, setCsvFile] =
+    useState(null);
+
   useEffect(() => {
     fetchStats();
   }, []);
@@ -43,41 +49,88 @@ function AdminDashboard() {
 
       fetchStats();
     } catch (err) {
+      alert(
+        err.response?.data?.message ||
+          "Failed To Create Employee"
+      );
+    }
+  };
+
+  const uploadProject = async () => {
+    if (!projectName || !csvFile) {
+      return alert(
+        "Project Name and CSV File Required"
+      );
+    }
+
+    try {
+      const formData = new FormData();
+
+      formData.append(
+        "projectName",
+        projectName
+      );
+
+      formData.append(
+        "file",
+        csvFile
+      );
+
+      const res = await axios.post(
+        "https://padmashree-backend.onrender.com/api/projects/upload",
+        formData
+      );
+
+      alert(
+        `Project Uploaded Successfully. Records Imported: ${res.data.totalRecords}`
+      );
+
+      setProjectName("");
+      setCsvFile(null);
+    } catch (err) {
       console.error(err);
 
-      if (err.response?.data?.message) {
-        alert(err.response.data.message);
-      } else {
-        alert("Failed To Create Employee");
-      }
+      alert(
+        "Project Upload Failed"
+      );
     }
   };
 
   const logout = () => {
     localStorage.clear();
+
     window.location.href = "/";
   };
 
   const totalEntries = employees.reduce(
-    (sum, emp) => sum + Number(emp.total_entries),
+    (sum, emp) =>
+      sum +
+      Number(emp.total_entries || 0),
     0
   );
 
   const topPerformer =
     employees.length > 0
-      ? employees.reduce((prev, current) =>
-          Number(current.total_entries) >
-          Number(prev.total_entries)
-            ? current
-            : prev
+      ? employees.reduce(
+          (prev, current) =>
+            Number(
+              current.total_entries
+            ) >
+            Number(
+              prev.total_entries
+            )
+              ? current
+              : prev
         )
       : null;
 
   return (
     <div className="min-h-screen bg-slate-100">
 
-      {/* Header */}
+      {/* HEADER */}
+
       <div className="bg-blue-900 text-white p-5 flex justify-between items-center">
+
         <h1 className="text-3xl font-bold">
           Admin Dashboard
         </h1>
@@ -88,66 +141,18 @@ function AdminDashboard() {
         >
           Logout
         </button>
+
       </div>
 
-      <div className="max-w-6xl mx-auto mt-10">
+      <div className="max-w-7xl mx-auto mt-10 px-4">
 
-        {/* Add Employee Card */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+        {/* STATS */}
 
-          <h2 className="text-2xl font-bold mb-5">
-            Add New Employee
-          </h2>
-
-          <div className="grid md:grid-cols-3 gap-4">
-
-            <input
-              type="text"
-              placeholder="Employee Name"
-              value={name}
-              onChange={(e) =>
-                setName(e.target.value)
-              }
-              className="border p-3 rounded-lg"
-            />
-
-            <input
-              type="email"
-              placeholder="Employee Email"
-              value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
-              className="border p-3 rounded-lg"
-            />
-
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
-              className="border p-3 rounded-lg"
-            />
-
-          </div>
-
-          <button
-            onClick={createEmployee}
-            className="mt-5 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg"
-          >
-            Add Employee
-          </button>
-
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid md:grid-cols-4 gap-6 mb-8">
 
           <div className="bg-white p-6 rounded-xl shadow-lg">
             <p className="text-gray-500">
-              Total Employees
+              Employees
             </p>
 
             <h2 className="text-4xl font-bold text-blue-900 mt-2">
@@ -157,11 +162,21 @@ function AdminDashboard() {
 
           <div className="bg-white p-6 rounded-xl shadow-lg">
             <p className="text-gray-500">
-              Total Entries
+              Entries
             </p>
 
             <h2 className="text-4xl font-bold text-green-600 mt-2">
               {totalEntries}
+            </h2>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-lg">
+            <p className="text-gray-500">
+              Projects
+            </p>
+
+            <h2 className="text-4xl font-bold text-purple-600 mt-2">
+              Active
             </h2>
           </div>
 
@@ -179,10 +194,101 @@ function AdminDashboard() {
 
         </div>
 
-        {/* Employee Table */}
+        {/* CREATE EMPLOYEE */}
+
+        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+
+          <h2 className="text-2xl font-bold mb-5">
+            Add New Employee
+          </h2>
+
+          <div className="grid md:grid-cols-3 gap-4">
+
+            <input
+              placeholder="Employee Name"
+              value={name}
+              onChange={(e) =>
+                setName(e.target.value)
+              }
+              className="border p-3 rounded-lg"
+            />
+
+            <input
+              placeholder="Email"
+              value={email}
+              onChange={(e) =>
+                setEmail(e.target.value)
+              }
+              className="border p-3 rounded-lg"
+            />
+
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) =>
+                setPassword(
+                  e.target.value
+                )
+              }
+              className="border p-3 rounded-lg"
+            />
+
+          </div>
+
+          <button
+            onClick={createEmployee}
+            className="mt-5 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg"
+          >
+            Add Employee
+          </button>
+
+        </div>
+
+        {/* PROJECT UPLOAD */}
+
+        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+
+          <h2 className="text-2xl font-bold mb-5">
+            Upload Project CSV
+          </h2>
+
+          <input
+            placeholder="Project Name"
+            value={projectName}
+            onChange={(e) =>
+              setProjectName(
+                e.target.value
+              )
+            }
+            className="w-full border p-3 rounded-lg mb-4"
+          />
+
+          <input
+            type="file"
+            accept=".csv"
+            onChange={(e) =>
+              setCsvFile(
+                e.target.files[0]
+              )
+            }
+            className="w-full border p-3 rounded-lg"
+          />
+
+          <button
+            onClick={uploadProject}
+            className="mt-5 bg-blue-900 hover:bg-blue-800 text-white px-6 py-3 rounded-lg"
+          >
+            Upload Project
+          </button>
+
+        </div>
+
+        {/* EMPLOYEE TABLE */}
+
         <div className="bg-white rounded-xl shadow-lg p-8">
 
-          <h2 className="text-2xl font-semibold mb-5">
+          <h2 className="text-2xl font-bold mb-5">
             Employee Productivity
           </h2>
 
@@ -190,6 +296,7 @@ function AdminDashboard() {
 
             <thead>
               <tr className="bg-blue-900 text-white">
+
                 <th className="p-3">
                   Employee
                 </th>
@@ -201,29 +308,34 @@ function AdminDashboard() {
                 <th className="p-3">
                   Entries
                 </th>
+
               </tr>
             </thead>
 
             <tbody>
 
-              {employees.map((emp) => (
-                <tr
-                  key={emp.id}
-                  className="hover:bg-gray-100"
-                >
-                  <td className="p-3 border">
-                    {emp.name}
-                  </td>
+              {employees.map(
+                (emp) => (
+                  <tr
+                    key={emp.id}
+                    className="hover:bg-gray-100"
+                  >
+                    <td className="border p-3">
+                      {emp.name}
+                    </td>
 
-                  <td className="p-3 border">
-                    {emp.email}
-                  </td>
+                    <td className="border p-3">
+                      {emp.email}
+                    </td>
 
-                  <td className="p-3 border text-center font-semibold">
-                    {emp.total_entries}
-                  </td>
-                </tr>
-              ))}
+                    <td className="border p-3 text-center">
+                      {
+                        emp.total_entries
+                      }
+                    </td>
+                  </tr>
+                )
+              )}
 
             </tbody>
 
