@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import axios from "axios";
 
 function DataEntry() {
@@ -11,14 +15,16 @@ function DataEntry() {
   const [formData, setFormData] =
     useState({});
 
+  const [errors, setErrors] =
+    useState({});
+
   const [loading, setLoading] =
     useState(true);
 
-  useEffect(() => {
-    fetchNextRecord();
-  }, []);
+  const [saving, setSaving] =
+    useState(false);
 
-  const fetchNextRecord = async () => {
+  const fetchNextRecord = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -40,16 +46,66 @@ function DataEntry() {
         });
 
         setFormData(blankForm);
+        setErrors({});
       }
     } catch (err) {
       console.log(err);
     }
 
     setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchNextRecord();
+  }, [fetchNextRecord]);
+
+  const normalizeValue = (value) =>
+    String(value ?? "").trim();
+
+  const validateForm = () => {
+    const nextErrors = {};
+
+    Object.entries(record.data).forEach(
+      ([field, expectedValue]) => {
+        const enteredValue = normalizeValue(
+          formData[field]
+        );
+
+        if (!enteredValue) {
+          nextErrors[field] =
+            "This field is required.";
+          return;
+        }
+
+        if (
+          enteredValue !==
+          normalizeValue(expectedValue)
+        ) {
+          nextErrors[field] =
+            "This value does not match the source record.";
+        }
+      }
+    );
+
+    setErrors(nextErrors);
+
+    return (
+      Object.keys(nextErrors).length === 0
+    );
   };
 
   const submitEntry = async () => {
+    if (!validateForm()) {
+      alert(
+        "Please fill every column correctly before saving."
+      );
+      return;
+    }
+
     try {
+      setSaving(true);
+
       await axios.post(
         "https://padmashree-backend.onrender.com/api/entries/create",
         {
@@ -67,9 +123,16 @@ function DataEntry() {
     } catch (err) {
       console.log(err);
 
-      alert(
-        "Failed To Save Entry"
+      setErrors(
+        err.response?.data?.errors || {}
       );
+
+      alert(
+        err.response?.data?.message ||
+          "Failed To Save Entry"
+      );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -162,23 +225,50 @@ function DataEntry() {
                 value={
                   formData[field]
                 }
-                className="w-full border p-3 rounded-lg"
-                onChange={(e) =>
+                className={`w-full border p-3 rounded-lg ${
+                  errors[field]
+                    ? "border-red-500 bg-red-50"
+                    : ""
+                }`}
+                aria-invalid={
+                  errors[field]
+                    ? "true"
+                    : "false"
+                }
+                onChange={(e) => {
+                  const value =
+                    e.target.value;
+
                   setFormData({
                     ...formData,
-                    [field]:
-                      e.target.value,
-                  })
-                }
+                    [field]: value,
+                  });
+
+                  if (errors[field]) {
+                    setErrors({
+                      ...errors,
+                      [field]: "",
+                    });
+                  }
+                }}
               />
+
+              {errors[field] && (
+                <p className="mt-2 text-sm text-red-600">
+                  {errors[field]}
+                </p>
+              )}
             </div>
           ))}
 
           <button
             onClick={submitEntry}
-            className="w-full bg-blue-900 hover:bg-blue-800 text-white py-3 rounded-lg font-bold"
+            disabled={saving}
+            className="w-full bg-blue-900 hover:bg-blue-800 disabled:bg-gray-400 text-white py-3 rounded-lg font-bold"
           >
-            Save & Load Next Record
+            {saving
+              ? "Saving..."
+              : "Save & Load Next Record"}
           </button>
 
         </div>
